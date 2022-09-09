@@ -21,8 +21,8 @@ int main(int argc, char **argv){
     connect(sock_fd,(struct sockaddr *)&servaddr, sizeof(servaddr));
 
     while(1){
-    bzero(sendline, 100);
-    bzero(recvline, 100);
+    memset(&sendline, 0, sizeof(sendline));
+    memset(&recvline, 0, sizeof(recvline));
     fgets(sendline, 100, stdin); /* stdin=0, for standard input */
     
     send(sock_fd, sendline, strlen(sendline),0);

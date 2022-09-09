@@ -39,7 +39,7 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-    int len, n;
+    unsigned int len, n;
     len = sizeof(cliaddr); //len is value/result
 
     // use of recvfrom in UDP instead of read (in TCP)
@@ -47,7 +47,7 @@ int main(){
 
     buffer[n] = '\0';
     printf("Client: %s\n", buffer);
-    sendto(sockfd, (const struct sockaddr *) &cliaddr, len);
+    sendto(sockfd, buffer, MAXLINE, 0,(const struct sockaddr *) &cliaddr, len);
     printf("Hello message sent.\n");
 
     return 0;    

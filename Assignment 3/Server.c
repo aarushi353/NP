@@ -1,25 +1,26 @@
-#include<stdio.h>
-#include<string.h>
-#include<unistd.h>
-#include<stdlib.h>
-#include<sys/socket.h>
-#include<arpa/inet.h>
-#include<netinet/in.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define MAXPENDING 10
 #define RCVBUFSIZE 32
 #define PORT 8080
+int main()
+{
+	int servSock;
+	int clntSock;
+	struct sockaddr_in ServAddr;
+	struct sockaddr_in ClntAddr;
+	unsigned short ServPort;
+	unsigned int clntLen;
 
-int main(int argc, char *argv[]){
-    int servSock;
-    int clntSock;
-    struct sockaddr_in ServAddr;
-    struct sockaddr_in ClntAddr;
-    unsigned short ServPort;
-    unsigned int clntLen;
-    
-    ServPort = PORT;
-    // Initializing server socket
+	ServPort = PORT;
+
+	// Initializing server socket
 	printf("Creating Server Socket...\n");
 	servSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (servSock < 0)
@@ -30,11 +31,11 @@ int main(int argc, char *argv[]){
 
 	// Configuring server socket
 	printf("Configuring server socket...\n");
-	memset(&ServAddr, 0, sizeof(ServAddr));
+	memset(&ClntAddr, 0, sizeof(ServAddr));
 	ServAddr.sin_family = AF_INET;
 	ServAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	ServAddr.sin_port = htons(ServPort);
-    
+
 	// Binding Configuration
 	int status = bind(servSock, (struct sockaddr *) &ServAddr, sizeof(ServAddr));
 	if (status < 0)
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]){
 	}
 	printf("Configuration of server socket completed.\n");
 
-    // Make the socket listen for incoming connections
+	// Make the socket listen for incoming connections
 	status = listen(servSock, MAXPENDING);
 	if (status < 0)
 	{
@@ -58,32 +59,50 @@ int main(int argc, char *argv[]){
 	char sendMsgBuffer[RCVBUFSIZE];
 	int sendMsgSize;
 	int recvMsgSize;
+	for (;;) // Infinite loop
+	{
+		memset(&ClntAddr, 0, sizeof(ClntAddr));
+		clntLen = sizeof(ClntAddr);
 
-    for(;;){ // Infinite Loop 
-       memset(&sendMsgBuffer, 0, RCVBUFSIZE);
-       memset(&recvMsgBuffer, 0, RCVBUFSIZE);
-       recvMsgSize = recv(clntSock, recvMsgBuffer, BUFSIZE, 0);
+		// Connect with client
+		printf("Waiting for client to connect...");
+		clntSock = accept(servSock, (struct sockaddr *) &ClntAddr, &clntLen);
+		if (clntSock < 0)
+		{
+			printf("Error while connecting with client.\n");
+			exit(EXIT_FAILURE);
+		}
+		printf("Successfully connected with client!\n");
 
-       if(recvMsgSize < 0){
-        printf("%s\nSend Message: ", recvMsgBuffer);
-        fgets(sendMsgBuffer, RCVBUFSIZE, stdin);
+		for (;;)
+		{
+			memset(&sendMsgBuffer, 0, RCVBUFSIZE);
+			memset(&recvMsgBuffer, 0, RCVBUFSIZE);
+			recvMsgSize = recv(clntSock, recvMsgBuffer, RCVBUFSIZE, 0);
+			if (recvMsgSize < 0)
+			{
+				printf("Error while receiving message.\n");
+				exit(EXIT_FAILURE);
+			}
+			printf("%s\nSend Message: ", recvMsgBuffer);
 
-        if(strcmp(sendMsgBuffer, "quit") == 0){
-            break;
-        }
+			fgets(sendMsgBuffer, RCVBUFSIZE, stdin);
+		
+			if (strcmp(sendMsgBuffer, "quit")==0)
+			{
+				break;
+			}
 
-        sendMsgSize = send(clntSock, sendMsgBuffer, RCVBUFSIZE, 0);
-        if(sendMsgSize < 0){
-            printf("Error while sending the message");
-            exit(EXIT_FAILURE);
-        }
-       }              
-       close(servSock);
-       printf("Connection termintaed and server closed.\n");
-    }
-    
-
+			sendMsgSize = send(clntSock, sendMsgBuffer, RCVBUFSIZE, 0);
+			if (sendMsgSize < 0)
+			{
+				printf("Error while sending the message.\n");
+				exit(EXIT_FAILURE);
+			}
+		}
+		close(clntSock);
+		break;
+	}
+	close(servSock);
+	printf("Connection terminated and server closed.\n");
 }
-
-
-
